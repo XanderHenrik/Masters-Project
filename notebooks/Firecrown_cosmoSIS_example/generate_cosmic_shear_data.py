@@ -47,4 +47,4 @@ delta_v = np.concatenate(dv, axis=0)
 cov = np.diag((EPS * delta_v) ** 2)
 
 sacc_data.add_covariance(cov)
-sacc_data.save_fits("cosmicshear.fits", overwrite=T
+sacc_data.save_fits("cosmicshear.fits", overwrite=True)

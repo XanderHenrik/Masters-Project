@@ -6,30 +6,34 @@ root = ${PWD}
 fatal_errors = T
 
 [output]
-filename = output/cosmicshear_samples.txt
+filename = output/des_y1_3x2pt_samples.txt
 format = text
 verbosity = 0
 
 [pipeline]
 modules = consistency camb firecrown_likelihood
-values = ${FIRECROWN_DIR}/examples/cosmicshear/cosmic_shear_values.ini
+values = ${FIRECROWN_DIR}/examples/des_y1_3x2pt/cosmosis/values.ini
 likelihoods = firecrown
-quiet = T
 debug = T
 timing = T
+extra_output = TwoPoint/NumberCountsScale_lens0 TwoPoint/NumberCountsScale_lens1 TwoPoint/NumberCountsScale_lens2 TwoPoint/NumberCountsScale_lens3 TwoPoint/NumberCountsScale_lens4
+
+[runtime]
+verbosity = 50 # 0-50
 
 [consistency]
 file = ${CSL_DIR}/utility/consistency/consistency_interface.py
 
 [camb]
 file = ${CSL_DIR}/boltzmann/camb/camb_interface.py
+
+nonlinear = none
 mode = all
 lmax = 2500
 feedback = 0
 zmin = 0.0
-zmax = 4.00
+zmax = 4.0
 nz = 100
-kmin = 1e-4
 kmax = 50.0
 nk = 1000
 
@@ -38,20 +42,18 @@ nk = 1000
 ;; Set FIRECROWN_DIR to the base of the firecrown installation (or build, if you haven't
 ;; installed it)
 file = ${FIRECROWN_DIR}/firecrown/connector/cosmosis/likelihood.py
-;; Note that we're intentionally using the deprecated parameter name
-;; 'firecrown_ini' rather than the better 'likelihood_source', to
-;; test the backward compatibility. Please don't do this for new
-;; code.
-likelihood_source = ${FIRECROWN_DIR}/examples/cosmicshear/get_likelihood_cosmic_shear.py
+likelihood_source = ${FIRECROWN_DIR}/examples/des_y1_3x2pt/factory.py
+sacc_file = ${FIRECROWN_DIR}/examples/des_y1_3x2pt/sacc_data.fits
 require_nonlinear_pk = True
 sampling_parameters_sections = firecrown_two_point
 
 [test]
 fatal_errors = T
-save_dir = cosmic_shear_output
+save_dir = output_factory
 
 [metropolis]
 samples = 1000
+nsteps = 1
 
 [emcee]
 walkers = 64
