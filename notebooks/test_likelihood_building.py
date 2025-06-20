@@ -57,6 +57,20 @@ def build_likelihood(params: NamedParameters):
             sacc_tracer=f'lens{i}', systematics=[gc_photo_z], derived_scale=True,
         )
     
+    """
+    Now that we defined the tracers that build up the 3x2pt. analysis, we will extend this by adding the missing
+    galaxy clustering tracer;
+    With the 3rd and final traver defined, we can define its auto correlated TwoPoint object aswell as the cross-correlated
+    TwoPoint objects with the previously defined tracers. This will then complete our 6x2pt analysis.
+    """
+    for i in range(5):
+        # Define the auto-correlated TwoPoint object for the galaxy clustering tracer:
+        gc_spec_z = nc.PhotoZShift(sacc_tracer=f'lens_spec{i}')
+
+        sources[f'lens_spec{i}'] = nc.NumberCounts(
+            sacc_tracer=f'lens_spec{i}', systematics=[gc_spec_z], derived_scale=True,
+        )
+
     # With the tracers defined, we can now correlate them to build auto and croww correlated angular power spectra:
 
     # Store the TwoPoint objects in the directory:
