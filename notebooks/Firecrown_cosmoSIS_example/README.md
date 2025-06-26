@@ -1,3 +1,0 @@
-# Firecrown example: DES year 1; 3x2pt
-
-These scripts are directly taken from the [Firecrown examples](https://github.com/LSSTDESC/firecrown/tree/master/examples/des_y1_3x2pt) and are by no means written by me. The main purpose of this, is to get familiar with Firecrown, build a likelihood and also to see how to link and use the likelihood(s) with cosmoSIS; such that the process of utilizing more developed pipelines becomes familiar.
