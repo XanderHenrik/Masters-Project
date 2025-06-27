@@ -1,0 +1,17 @@
+common:
+  sacc_data: "sacc_data"
+  n_spec: 2
+  n_ell: 10
+  n_z: 5
+  n_z_spec: 5
+  n_z_bin: 5
+  n_z_bin_spec: 5
+
+tracers:
+  gc_spec:
+    tracer_name: "lens_spec"
+    n_bins: 10
+    z_start: 0.
+    z_stop: 1.
+    dndz: (0.02 / np.sqrt(2 * np.pi)) * (z / z0)**alpha * np.exp(-0.5 * (z / z0)**beta)
+  

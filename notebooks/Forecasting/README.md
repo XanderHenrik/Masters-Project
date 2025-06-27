@@ -1,7 +1,8 @@
 # Firecrown: (DES year 1); 6x2pt analysis
 
-Here we take a trial attempt at the firecrown & cosmoSIS interplay.
-Using the structure taken from the examples and tutorials of firecrown, cosmoSIS and SACC; 
+Here we take a trial attempt at the [firecrown](https://firecrown.readthedocs.io/en/latest/_static/intro_article.html)
+& [cosmoSIS](https://cosmosis.readthedocs.io/en/latest/index.html) interplay.
+Using the structure taken from the examples and tutorials of firecrown, cosmoSIS and [SACC](https://sacc.readthedocs.io/en/latest/intro.html); 
 we build a structure that allows us to build a 6x2pt likelihood.
 
 To start, we might use the DES year 1 data since this is used and shown in the Firecrown 

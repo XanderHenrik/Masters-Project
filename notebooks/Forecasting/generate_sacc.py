@@ -3,20 +3,86 @@ import numpy as np
 import yaml
 import sacc
 
-import firecrown
+# From Firecrown, we need the following imports:
+from firecrown.metadata_types import (
+    Galaxies,
+    InferredGalaxyZDist,
+    TwoPointXY, 
+    TwoPointHarmonic,
+    Measurement,
+    TwoPointCorrelationSpace,
+)
 
-"""
-Here we create a SACC file to accomodate the 3x2pt/6x2pt or even en nx2pt Fisher forecast.
-The application is to be determined but the clear goal is the generation of a full firecrown likeihood.
+from firecrown.generators.two_point import (
+    LogLinearElls,
+)
 
-To do so, we need to include a couple of elements into the SACC file:
-- metadata; the nuisance parameter specification
-- galaxy redshift distributions for the tracers in the analysis
-- Mock data; to facilitate the forecasting
-- The covariance
+from firecrown.modeling_tools import (
+    ModelingTools,
+)
 
-The SACC file is then read and used to generate the theory vector and then the likelihood
-"""
+from firecrown.likelihood.two_point import (
+    TwoPoint, 
+    TwoPointFactory, 
+    NumberCountsFactory,
+    WeakLensingFactory,
+)
+
+from firecrown.likelihood import (
+    number_counts as nc,
+    weak_lensing as wl,
+    two_point as tp,
+)
+
+import Forecasting.load_config as load_config
+
+class sacc_generator:
+        
+    """
+    Here we create a SACC file to accomodate the 3x2pt/6x2pt or even en nx2pt Fisher forecast.
+    The application is to be determined but the clear goal is the generation of a full firecrown likeihood.
+
+    To do so, we need to include a couple of elements into the SACC file:
+    - metadata; the nuisance parameter specification
+    - galaxy redshift distributions for the tracers in the analysis
+    - (Mock) data; to facilitate the forecasting
+    - The covariance
+
+    The SACC file is then read and used to generate the theory vector and then the likelihood
+    """
+
+    def __init__(self, config):
+        self.config = load_config(config)
+
+
+
+    def galaxy_redshift_distributions(self, n_bins, tracer: str): 
+        
+        # Define the the specified number of bins for the given tracer:
+        tracer_bins = {}
+
+        for i in range(n_bins):
+            tracer_bins[f'{tracer}{i}'] = InferredGalaxyZDist(
+                bin_name = f'{tracer}{i}',
+                z = np.linspace(n_low, n_hi, 200),
+                dndz = self.config['dndz'][f'{tracer}']
+            )
+
+
+
+        return tracer_bins
+
+if __name__ == "__main__":
+    # Load the configuration file
+    config = load_config.load_config('6x2pt_config.yaml')
+
+    # Initialize the sacc_generator with the given configuration:
+    sacc_gen = sacc_generator(config)
+
+    # Example usage of the galaxy_redshift_distributions method
+    lens_spec_bins = sacc_gen.galaxy_redshift_distributions(10, 'lens_spec')
+    print(lens_spec_bins)
+
 
 angles = """\
 ## angle_range_xip_1_1 = 7.195005 250.0
@@ -126,7 +192,7 @@ for line in angles.split("\n"):
 # only the autocorrelation wtheta bins are kept
 n_srcs = 4
 n_lens = 5
-n_spec = 5
+n_spec = 10 # If we define spectrocopic bins on the same resdhift interval as the photometric bins, we must have more bins due to the higher resolution of the spectroscopic data.
 
 # this holds a global mask of which elements of the data vector to keep
 tot_msk = []
