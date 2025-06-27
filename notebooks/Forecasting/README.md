@@ -22,7 +22,6 @@ The elements that we need are:
         - The Sampler
         - The values and priors used for the sampling 
 
-        And all the file locations for these elements.
 - The values and priors for the sampling.
 
-Each element will be further highlighted and explained in the according files
+The aim and contents of each of the files is more explicitly explained within these files.
