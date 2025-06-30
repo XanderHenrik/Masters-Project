@@ -22,9 +22,10 @@ def load_config(config_file: str) -> dict:
     )
 
     # The YAML file must be found in the current directory, defined as:
-    current_dir = os.path.dirname(os.path.abspath(__file__)) # where __file__ is the current file and its path/directory
+    current_dir = os.path.dirname(os.path.abspath(__file__)) + '/' # where __file__ is the current file and its path/directory
 
-    # print(f"Current directory: {current_dir}")
+    print(f"Current directory: {current_dir}")
+    print(f"Config file: {config_file}")
 
     # Try to open the YAML file provided as config_file
     with open(os.path.join(current_dir, config_file), 'r') as yamlfile:

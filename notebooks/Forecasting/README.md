@@ -5,6 +5,8 @@ Here we take a trial attempt at the [firecrown](https://firecrown.readthedocs.io
 Using the structure taken from the examples and tutorials of firecrown, cosmoSIS and [SACC](https://sacc.readthedocs.io/en/latest/intro.html); 
 we build a structure that allows us to build a 6x2pt likelihood.
 
+Note: for building the galaxy redshift distributions, we use the [glass.observations module](https://glass.readthedocs.io/v2023.6/reference/observations.html#rd48878c677a1-1)
+
 To start, we might use the DES year 1 data since this is used and shown in the Firecrown 
 tutorials & examples. However, we aim to build the structure in the general case, where we 
 can run a 6x2pt forecast.

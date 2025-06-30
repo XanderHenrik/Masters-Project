@@ -2,6 +2,7 @@ import fitsio
 import numpy as np
 import yaml
 import sacc
+import glass.observations as glass_obs
 
 # From Firecrown, we need the following imports:
 from firecrown.metadata_types import (
@@ -34,7 +35,7 @@ from firecrown.likelihood import (
     two_point as tp,
 )
 
-import Forecasting.load_config as load_config
+import load_config#.py as load_config
 
 class sacc_generator:
         
@@ -52,7 +53,7 @@ class sacc_generator:
     """
 
     def __init__(self, config):
-        self.config = load_config(config)
+        self.config = load_config.load_config(config)
 
 
 
@@ -61,23 +62,64 @@ class sacc_generator:
         # Define the the specified number of bins for the given tracer:
         tracer_bins = {}
 
-        for i in range(n_bins):
-            tracer_bins[f'{tracer}{i}'] = InferredGalaxyZDist(
-                bin_name = f'{tracer}{i}',
-                z = np.linspace(n_low, n_hi, 200),
-                dndz = self.config['dndz'][f'{tracer}']
-            )
+        n_bins, z_start, z_stop, z_err, z0 = (
+            self.config['tracers'][tracer]['n_bins'],
+            self.config['tracers'][tracer]['z_start'],
+            self.config['tracers'][tracer]['z_stop'],
+            self.config['tracers'][tracer]['z_err'],
+            self.config['tracers'][tracer]['z0']
+        )
+
+        # Redshift distribution from doi:10.1111/j.1365-2966.2007.12271.x:
+        z = np.linspace(z_start, z_stop, n_bins + 1)
+        print(f"Redshift bins for {tracer}: {z}")
+        alpha = 2.0
+        beta = 1.5
+        dndz = (0.02 / np.sqrt(2 * np.pi)) * (z / z0)**alpha * np.exp(-0.5 * (z / z0)**beta) # Following Smail et al. 1993, eq. 2 (from Glass)
+        n_bar = 30 * (60**2) * (np.pi/180)**2  # number density in steradians        
+
+        """
+        Incorporate gaussian error in redshoft binning
+        """
+
+        if tracer == 'lens_spec':
+
+            for i in range(n_bins):
+                # Define the spec z distribution for the i-th bin:
+                spec_z = (np.heaviside((z[i] - 0.9), 1) - np.heaviside((z[i+1] - 1.8), 1)) * dndz
+                tracer_bins[f'{tracer}{i}'] = InferredGalaxyZDist(
+                    bin_name = f'{tracer}{i}',
+                    z = z,
+                    dndz= spec_z * n_bar,
+                    measurements={Galaxies.COUNTS},
+                )
+                
 
 
+
+        # elif tracer == 'lens':
+        #     for i in range(n_bins):
+        #         tracer_bins[f'{tracer}{i}'] = InferredGalaxyZDist(
+        #             bin_name = f'{tracer}{i}',
+        #             z = z,
+        #             dndz= dndz * n_bar,
+        #             measurements={Galaxies.COUNTS},)
+        # elif tracer == 'src':
+        #     for i in range(n_bins):
+        #         tracer_bins[f'{tracer}{i}'] = InferredGalaxyZDist(
+        #             bin_name = f'{tracer}{i}',
+        #             z = z,
+        #             dndz= dndz * n_bar,
+        #             measurements={Galaxies.SHEAR_E},)
 
         return tracer_bins
 
 if __name__ == "__main__":
     # Load the configuration file
-    config = load_config.load_config('6x2pt_config.yaml')
+    # config = load_config.load_config('6x2pt_config.yaml')
 
     # Initialize the sacc_generator with the given configuration:
-    sacc_gen = sacc_generator(config)
+    sacc_gen = sacc_generator('6x2pt_config.yaml')
 
     # Example usage of the galaxy_redshift_distributions method
     lens_spec_bins = sacc_gen.galaxy_redshift_distributions(10, 'lens_spec')
