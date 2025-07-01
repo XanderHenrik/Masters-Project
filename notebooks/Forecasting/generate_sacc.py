@@ -3,6 +3,7 @@ import numpy as np
 import yaml
 import sacc
 import glass.observations as glass_obs
+import matplotlib.pyplot as plt
 
 # From Firecrown, we need the following imports:
 from firecrown.metadata_types import (
@@ -55,9 +56,13 @@ class sacc_generator:
     def __init__(self, config):
         self.config = load_config.load_config(config)
 
+        # For the redshift domain of the analysis;
+        self.z_start = self.config['analysis specs']['z_start']
+        self.z_stop = self.config['analysis specs']['z_stop']
 
 
-    def galaxy_redshift_distributions(self, n_bins, tracer: str): 
+
+    def calc_redshift_distributions(self, tracer: str): 
         
         # Define the the specified number of bins for the given tracer:
         tracer_bins = {}
@@ -72,59 +77,160 @@ class sacc_generator:
 
         # Redshift distribution from doi:10.1111/j.1365-2966.2007.12271.x:
         z = np.linspace(z_start, z_stop, n_bins + 1)
-        print(f"Redshift bins for {tracer}: {z}")
+        # print(f"Redshift bins for {tracer}: {z}")
         alpha = 2.0
         beta = 1.5
-        dndz = (0.02 / np.sqrt(2 * np.pi)) * (z / z0)**alpha * np.exp(-0.5 * (z / z0)**beta) # Following Smail et al. 1993, eq. 2 (from Glass)
-        n_bar = 30 * (60**2) * (np.pi/180)**2  # number density in steradians        
+        dndz = (0.02 / np.sqrt(2 * np.pi)) * (z / z0)**alpha * np.exp(-0.5 * (z / z0)**beta) # Following Smail et al. 1994, eq. 2 (from Glass)
+        n_bar = 30 * (60**2) * (np.pi/180)**2  # number density in steradians
 
         """
-        Incorporate gaussian error in redshoft binning
+        TODO: look at reading the redshift distribution from a '.txt' file; we will be using a redshift
+        distribution given to us in a '.txt' file or using the default redshift distributions defined in Firecrown.
+
+        We can incorporate gaussian error in redshift binning in this '.txt' file?
         """
 
         if tracer == 'lens_spec':
-
+            # z_spec = np.linspace(z_start, z_stop, n_bins + 1)
             for i in range(n_bins):
                 # Define the spec z distribution for the i-th bin:
-                spec_z = (np.heaviside((z[i] - 0.9), 1) - np.heaviside((z[i+1] - 1.8), 1)) * dndz
+                spec_z = (np.heaviside((z[i] - z_start), 1) - np.heaviside((z[i+1] - z_stop), 1)) * dndz
+                # print(f"Spec z distribution for {tracer}{i}: {spec_z}")
                 tracer_bins[f'{tracer}{i}'] = InferredGalaxyZDist(
                     bin_name = f'{tracer}{i}',
                     z = z,
                     dndz= spec_z * n_bar,
                     measurements={Galaxies.COUNTS},
                 )
+            # plt.plot(z,
+            #          (np.heaviside((z - z_start), 1) - np.heaviside((z - z_stop), 1)) * dndz, 'o-', label='Step it up')
+            # plt.show()
                 
-
-
-
-        # elif tracer == 'lens':
-        #     for i in range(n_bins):
-        #         tracer_bins[f'{tracer}{i}'] = InferredGalaxyZDist(
-        #             bin_name = f'{tracer}{i}',
-        #             z = z,
-        #             dndz= dndz * n_bar,
-        #             measurements={Galaxies.COUNTS},)
-        # elif tracer == 'src':
-        #     for i in range(n_bins):
-        #         tracer_bins[f'{tracer}{i}'] = InferredGalaxyZDist(
-        #             bin_name = f'{tracer}{i}',
-        #             z = z,
-        #             dndz= dndz * n_bar,
-        #             measurements={Galaxies.SHEAR_E},)
+        elif tracer == 'lens':
+            for i in range(n_bins):
+                tracer_bins[f'{tracer}{i}'] = InferredGalaxyZDist(
+                    bin_name = f'{tracer}{i}',
+                    z = z,
+                    dndz= dndz * n_bar,
+                    measurements={Galaxies.COUNTS},
+                )
+        
+        elif tracer == 'src':
+            for i in range(n_bins):
+                tracer_bins[f'{tracer}{i}'] = InferredGalaxyZDist(
+                    bin_name = f'{tracer}{i}',
+                    z = z,
+                    dndz= dndz * n_bar,
+                    measurements={Galaxies.SHEAR_E},
+                )
 
         return tracer_bins
+    
+
+    def get_lens_statistics(self, tracer: str):
+        """
+        Initiate the systematics we apply to the tracers when building the harmonic
+        TwoPoint object.
+
+        In the config file, the the systematics are given a bolean value; our treatment
+        of the systematics therefore contains quite some assumptions:
+        - If True: linear alignment is always applied to the whole redshift space
+        - The other statistics are applied per bin. This includes:
+            - multiplicative bias
+            - photo-z shift
+        Other systematics might follow later
+
+        Parameters:
+        tracer: str, the tracer for which we want to get the systematics.
+
+        returns:
+        systematics: list of systematics that will be applied per bin
+        global_systematics: list of systematics that will be applied to the entire redshift space
+        (These will be used in the TwoPointHarmonic object, to obtain the angular power spectra)
+        """
+        # Initialize the systematics and global_systematics lists:
+        systematics = []
+        global_systematics = []
+
+        if tracer == 'lens_spec':
+            for i in range(self.config['tracers'][f'{tracer}']['n_bins']):
+                if self.config['tracers'][f'{tracer}']['systematics']['mult_bias']:
+                    systematics.append(
+                        wl.MultiplicativeShearBias(sacc_tracer=f'{tracer}{i}')
+                    )
+                if self.config['tracers'][f'{tracer}']['systematics']['photo_z_shift']:
+                    systematics.append(
+                        wl.PhotoZShift(sacc_tracer=f'{tracer}{i}')
+                    )
+                if self.config['tracers'][f'{tracer}']['systematics']['linear_alignment']:
+                        global_systematics.append(
+                            wl.LinearAlignmentSystematic(sacc_tracer=f'{tracer}{i}')
+                        )
+
+        if tracer == 'lens':
+            for i in range(self.config['tracers'][f'{tracer}']['n_bins']):
+                if self.config['tracers'][f'{tracer}']['systematics']['photo_z_shift']:
+                    systematics.append(
+                        nc.PhotoZShift(sacc_tracer=f'{tracer}{i}')
+                    )
+        if tracer == 'src':
+            for i in range(self.config['tracers'][tracer]['n_bins']):
+                if self.config['tracers'][f'{tracer}']['systematics']['photo_z_shift']:
+                    systematics.append(
+                        wl.PhotoZShift(sacc_tracer=f'{tracer}{i}')
+                    )
+
+        return systematics, global_systematics
+    
+
+    def correlate_bins(self, tracer_a, tracer_b):
+        """
+        Here we correlate bins of tracers. We combine to both auto- and cross-correlated
+        bins of the tracers in the analysis.
+        Since we obtain a dictionary containing all bins of one tracer, we input the tracers:
+
+        Parameters:
+        tracer_a: str, tracer defined by 'get_lens_statistics'
+        tracer_b: str, tracer defined by 'get_lens_statistics'
+
+        Return(s):
+        correlated_bins: dict, containing the correlated bins of the tracers
+        """
+        correlated_bins = {}
+        # keys_a = tracer_a.keys()
+        # print(f"Keys of tracer_a: {type(keys_a)}")
+        # keys_b = tracer_b.keys()
+
+        # print(f'Tracer a is {tracer_a} and tracer b is {tracer_b}, met measurements set to: {tracer_a[keys_a[1]].measurements} and {tracer_b[keys_b[1]].measurements} respectively')
+        for key_a in tracer_a.keys():
+            for key_b in tracer_b.keys():
+                correlated_bins[f"{tracer_a[key_a]}_{tracer_b[key_b]}"] = TwoPointXY(
+                    x = tracer_a[key_a],
+                    y = tracer_b[key_b],
+                    x_measurement = next(iter(tracer_a[key_a].measurements)),
+                    y_measurement = next(iter(tracer_b[key_b].measurements)),
+                )
+
+        return correlated_bins
 
 if __name__ == "__main__":
-    # Load the configuration file
-    # config = load_config.load_config('6x2pt_config.yaml')
 
     # Initialize the sacc_generator with the given configuration:
     sacc_gen = sacc_generator('6x2pt_config.yaml')
 
     # Example usage of the galaxy_redshift_distributions method
-    lens_spec_bins = sacc_gen.galaxy_redshift_distributions(10, 'lens_spec')
-    print(lens_spec_bins)
+    lens_spec_bins = sacc_gen.calc_redshift_distributions('lens_spec')
+    # print(f"Lens spec bins: {lens_spec_bins}")
+    # print(lens_spec_bins['lens_spec0'].measurements == {Galaxies.COUNTS})
 
+    syst_spec, global_syst_spec = sacc_gen.get_lens_statistics('lens_spec')
+    # print(f"Systematics for lens_spec: {syst_spec}")
+    # print(f"Global systematics for lens_spec: {global_syst_spec}")
+
+    auto_lens_spec = sacc_gen.correlate_bins(lens_spec_bins, lens_spec_bins)
+    print(f"Auto-correlated bins for lens_spec: {auto_lens_spec}")
+
+    
 
 angles = """\
 ## angle_range_xip_1_1 = 7.195005 250.0

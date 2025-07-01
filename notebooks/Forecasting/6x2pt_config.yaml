@@ -3,15 +3,21 @@ analysis specs:
   ell_min: 2
   ell_max: 1500
   n_ell: 1501
+  z_start: 0.0
+  z_stop: 1.0
 
 tracers:
   lens_spec:
     tracer_name: "lens_spec"
     n_bins: 10
-    z_start: 0.333
-    z_stop: 0.667
+    z_start: 0.33333
+    z_stop: 0.66667
     z_err: 0.003
-    z0: 0.318696
+    z0: 0.318696 # z_mean/1.412 acoording to: Amara A., Refregier A., 2007, MNRAS, 381, 1018 (eq. 5)
+    systematics:
+      mult_bias: True # Assume this systematic is always applied per bin 
+      photo_z_shift: True # Assume this systematic is always applied per bin
+      linear_alignment: True # Assume this is always a global systematics for now
 
   lens:
     tracer_name: "lens"
@@ -20,6 +26,8 @@ tracers:
     z_stop: 1.
     z_err: 0.03
     z0: 0.354107
+    systematics:
+      photo_z_shift: True # Assume this systematic is always applied per bin
   
   src:
     tracer_name: "source"
@@ -28,6 +36,8 @@ tracers:
     z_stop: 1
     z_err: 0.03
     z0: 0.354107
+    systematics:
+      photo_z_shift: True # Assume this systematic is always applied per bin
 
 cosmo parameters:
   Omega_c: 0.27
@@ -41,3 +51,9 @@ cosmo parameters:
   extra_parameters:
     camb:
       halofit_version: "mead2020"
+
+modelling tools:
+
+
+CCL:
+  cosmo pars:
