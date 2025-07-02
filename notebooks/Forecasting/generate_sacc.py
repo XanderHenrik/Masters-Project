@@ -4,6 +4,7 @@ import yaml
 import sacc
 import glass.observations as glass_obs
 import matplotlib.pyplot as plt
+import pyccl
 
 # From Firecrown, we need the following imports:
 from firecrown.metadata_types import (
@@ -65,7 +66,7 @@ class sacc_generator:
     def calc_redshift_distributions(self, tracer: str): 
         
         # Define the the specified number of bins for the given tracer:
-        tracer_bins = {}
+        tracer_bins: dict[str, InferredGalaxyZDist] = {}
 
         n_bins, z_start, z_stop, z_err, z0 = (
             self.config['tracers'][tracer]['n_bins'],
@@ -183,7 +184,7 @@ class sacc_generator:
         return systematics, global_systematics
     
 
-    def correlate_bins(self, tracer_a, tracer_b):
+    def correlate_two_bins(self, tracer_a, tracer_b):
         """
         Here we correlate bins of tracers. We combine to both auto- and cross-correlated
         bins of the tracers in the analysis.
@@ -196,22 +197,73 @@ class sacc_generator:
         Return(s):
         correlated_bins: dict, containing the correlated bins of the tracers
         """
-        correlated_bins = {}
-        # keys_a = tracer_a.keys()
-        # print(f"Keys of tracer_a: {type(keys_a)}")
-        # keys_b = tracer_b.keys()
+        correlated_bins: dict[str, TwoPointXY] = {}
 
-        # print(f'Tracer a is {tracer_a} and tracer b is {tracer_b}, met measurements set to: {tracer_a[keys_a[1]].measurements} and {tracer_b[keys_b[1]].measurements} respectively')
+        # Correlate the given bins in all possible ways:
         for key_a in tracer_a.keys():
             for key_b in tracer_b.keys():
-                correlated_bins[f"{tracer_a[key_a]}_{tracer_b[key_b]}"] = TwoPointXY(
+                correlated_bins[f"{tracer_a[key_a]}_{tracer_b[key_b]}"] = [TwoPointXY(
                     x = tracer_a[key_a],
                     y = tracer_b[key_b],
+                    
+                    # Extract the correct measurements from the bin definitions:
                     x_measurement = next(iter(tracer_a[key_a].measurements)),
                     y_measurement = next(iter(tracer_b[key_b].measurements)),
-                )
+                )]
 
         return correlated_bins
+
+
+    def collect_6x2pt_correlated_bins(self):
+        """
+        In this method, we build the 6x2pt correlated bins from which we can then initiate the TwoPointHarmonic
+        objects.
+
+        Parameters:
+        The 3 tracers we build the 6x2pt from:
+        tracer_a: str, first tracer
+        tracer_b: str, second tracer
+        tracer_c: str, third tracer
+
+        Returns:
+        correlated_bins: dict, containing the correlated bins of the tracers
+        """
+        all_correlated_bins = {}
+
+        # Generate and store all bin correlations:
+        # i = 0
+        # for lens key in self.lens_spec_bins.keys():
+        #     all_correlated_bins[f'lens{}_lens{}'] = 
+        
+
+        return
+
+
+    def init_two_point_harmonic(self, tracer_a, tracer_b, tracer_c):
+        return
+
+    def get_multipole_bins(self):
+
+        l_start = self.config['analysis specs']['ell_min']
+        l_stop = self.config['analysis specs']['ell_max']
+        n_ells = self.config['analysis specs']['n_ell']
+
+        ell_bins = LogLinearElls(
+            minimum = l_start,
+            midpoint = (l_start + l_stop) / 10,
+            maximum = l_stop,
+            n_log = n_ells,
+        )
+
+        return ell_bins
+
+
+    def get_modelling_tools(self):
+        return
+
+
+    def calc_gaussian_cov(self):
+        return
 
 if __name__ == "__main__":
 
@@ -219,16 +271,16 @@ if __name__ == "__main__":
     sacc_gen = sacc_generator('6x2pt_config.yaml')
 
     # Example usage of the galaxy_redshift_distributions method
-    lens_spec_bins = sacc_gen.calc_redshift_distributions('lens_spec')
+    lens_spec_bins = sacc_gen.calc_redshift_distributions('src')
     # print(f"Lens spec bins: {lens_spec_bins}")
     # print(lens_spec_bins['lens_spec0'].measurements == {Galaxies.COUNTS})
 
-    syst_spec, global_syst_spec = sacc_gen.get_lens_statistics('lens_spec')
+    syst_spec, global_syst_spec = sacc_gen.get_lens_statistics('src')
     # print(f"Systematics for lens_spec: {syst_spec}")
     # print(f"Global systematics for lens_spec: {global_syst_spec}")
 
-    auto_lens_spec = sacc_gen.correlate_bins(lens_spec_bins, lens_spec_bins)
-    print(f"Auto-correlated bins for lens_spec: {auto_lens_spec}")
+    auto_lens_spec = sacc_gen.correlate_two_bins(lens_spec_bins, lens_spec_bins)
+    print(f"Auto-correlated bins for lens_spec: {type(auto_lens_spec)}")
 
     
 
