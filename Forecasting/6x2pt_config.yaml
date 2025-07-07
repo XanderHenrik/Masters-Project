@@ -31,7 +31,7 @@ tracers:
       photo_z_shift: True # Assume this systematic is always applied per bin
   
   src:
-    tracer_name: "source"
+    tracer_name: "src"
     n_bins: 5
     z_start: 0.1
     z_stop: 1.1
