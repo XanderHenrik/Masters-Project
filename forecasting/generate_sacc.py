@@ -184,15 +184,15 @@ class sacc_generator:
         return systematics, global_systematics
     
 
-    def correlate_two_bins(self, tracer_a, tracer_b):
+    def correlate_two_bins(self, tracer_a: InferredGalaxyZDist, tracer_b: InferredGalaxyZDist):
         """
         Here we correlate bins of tracers. We combine to both auto- and cross-correlated
         bins of the tracers in the analysis.
         Since we obtain a dictionary containing all bins of one tracer, we input the tracers:
 
         Parameters:
-        tracer_a: str, tracer defined by 'get_lens_statistics'
-        tracer_b: str, tracer defined by 'get_lens_statistics'
+        tracer_a: InferredGalaxyZDist, tracer bins defined by 'get_lens_statistics'
+        tracer_b: InferredGalaxyZDist, tracer bins defined by 'get_lens_statistics'
 
         Return(s):
         correlated_bins: dict, containing the correlated bins of the tracers
@@ -200,50 +200,97 @@ class sacc_generator:
         correlated_bins: dict[str, TwoPointXY] = {}
 
         # Correlate the given bins in all possible ways:
-        for key_a in tracer_a.keys():
-            for key_b in tracer_b.keys():
-                correlated_bins[f"{tracer_a[key_a]}_{tracer_b[key_b]}"] = [TwoPointXY(
-                    x = tracer_a[key_a],
-                    y = tracer_b[key_b],
-                    
-                    # Extract the correct measurements from the bin definitions:
-                    x_measurement = next(iter(tracer_a[key_a].measurements)),
-                    y_measurement = next(iter(tracer_b[key_b].measurements)),
-                )]
+        tracer_type_a = [tracer_a[key].bin_name[:-1] for key in tracer_a.keys()]
+        tracer_type_b = [tracer_b[key].bin_name[:-1] for key in tracer_b.keys()]
+
+        print(tracer_type_a[0], tracer_type_b[0])
+
+
+        # For thev auto-correlated tracers:
+        if tracer_a == tracer_b:
+            for i in range(len(tracer_a.keys())):
+                for j in range(len(tracer_b.keys())):
+                    if i <= j:
+                        correlated_bins[f"{tracer_type_a[i]}_{tracer_type_a[j]}"] = [TwoPointXY(
+                            x = tracer_a[f'{tracer_type_a[i]}'],
+                            y = tracer_a[f'{tracer_type_a[j]}'],
+                            
+                            # Extract the correct measurements from the bin definitions:
+                            x_measurement = next(iter(tracer_a[f'{tracer_type_a[i]}'].measurements)),
+                            y_measurement = next(iter(tracer_a[f'{tracer_type_a[j]}'].measurements)),
+                        )]
+
+        # For cross-correlated tracers, we don't have to cut half of the correlations
+        else:
+            for key_a in tracer_a.keys():
+                for key_b in tracer_b.keys():
+                    # print(f"Correlating {key_a} with {key_b}")
+                    correlated_bins[f"{tracer_a[key_a]}_{tracer_b[key_b]}"] = [TwoPointXY(
+                        x = tracer_a[key_a],
+                        y = tracer_b[key_b],
+                        
+                        # Extract the correct measurements from the bin definitions:
+                        x_measurement = next(iter(tracer_a[key_a].measurements)),
+                        y_measurement = next(iter(tracer_b[key_b].measurements)),
+                    )]
 
         return correlated_bins
 
 
-    def collect_6x2pt_correlated_bins(self, zdist_a, zdist_b, zdist_c):
+    def collect_6x2pt_correlated_bins(self,
+                                      tracer_a: InferredGalaxyZDist,
+                                      tracer_b: InferredGalaxyZDist,
+                                      tracer_c: InferredGalaxyZDist, 
+                                      ):
         """
         In this method, we build the 6x2pt correlated bins from which we can then initiate the TwoPointHarmonic
         objects.
 
         Parameters:
         The 3 tracers we build the 6x2pt from:
-        zdist_a: dict, containing the redshift distributions of the first tracer
-        zdist_b: dict, containing the redshift distributions of the second tracer
-        zdist_c: dict, containing the redshift distributions of the third tracer
+        tracer_a: dict, containing the redshift distributions of the lens probe (photometric galaxy clustering)
+        tracer_b: dict, containing the redshift distributions of the source probe (sources of the weak lensing probe)
+        tracer_c: dict, containing the redshift distributions of the lens_spec probe (spectroscopic galaxy clustering)
 
         Returns:
         correlated_bins: dict, containing the correlated bins of the tracers
         """
 
-
         all_correlated_bins = {'lens_lens': [], 'src_src': [], 'lens_spec_lens_spec': [], 
                                'lens_src': [], 'lens_lens_spec': [], 'src_lens_spec': []}
 
-        # Now we correlate the tracers and their bins in all possible ways:
-        all_correlated_bins['lens_lens'].appensd(self.correlate_two_bins(zdist_a, zdist_a))
-        all_correlated_bins['src_src'].append(self.correlate_two_bins(zdist_b, zdist_b))
-        all_correlated_bins["lens_spec_lens_spec"].append(self.correlate_two_bins(zdist_c, zdist_c))
+        # Now definen the correlated bins in auto and cross-correlations:
+        # Auto-correlations:
+        all_correlated_bins['lens_lens'].append(
+            self.correlate_two_bins(tracer_a, tracer_a)
+        )
 
+        all_correlated_bins['src_src'].append(
+            self.correlate_two_bins(tracer_b, tracer_b)
+        )
 
-        
+        all_correlated_bins['lens_spec_lens_spec'].append(
+            self.correlate_two_bins(tracer_c, tracer_c)
+        )
+
+        # Cross-correlations
+        all_correlated_bins['lens_src'].append(
+            self.correlate_two_bins(tracer_a, tracer_b)
+        )
+
+        all_correlated_bins['src_lens_spec'].append(
+            self.correlate_two_bins(tracer_b, tracer_c)
+        )
+
+        all_correlated_bins['lens_lens_spec'].append(
+            self.correlate_two_bins(tracer_a, tracer_c)
+        )
+
         return all_correlated_bins
 
 
-    def init_two_point_harmonic(self, tracer_a, tracer_b, tracer_c):
+    def init_two_point_harmonic(self, correlated_bins):
+
         return
 
     def get_multipole_bins(self):
@@ -275,10 +322,16 @@ if __name__ == "__main__":
     sacc_gen = sacc_generator('6x2pt_config.yaml')
 
     # Example usage of the galaxy_redshift_distributions method
-    lens_spec_bins = sacc_gen.calc_redshift_distributions('src')
-    print(f"Lens spec bins: {lens_spec_bins['src1']}")
+    lens_bins = sacc_gen.calc_redshift_distributions('lens')
+    src_bins = sacc_gen.calc_redshift_distributions('src')
+    lens_spec_bins = sacc_gen.calc_redshift_distributions('lens_spec')
+    
+    # print(f"Lens spec bins: {lens_spec_bins['src1']}")
+    # print(f"Lens spec bins: {lens_spec_bins['src1'].dndz}")
 
-    print(lens_spec_bins.keys())
+    # for key in lens_spec_bins.keys():
+    #     print(key[:-1])
+        # print(lens_spec_bins[key].bin_name[:-1])
 
     # print(lens_spec_bins['lens_spec0'].measurements == {Galaxies.COUNTS})
 
@@ -286,12 +339,11 @@ if __name__ == "__main__":
     # print(f"Systematics for lens_spec: {syst_spec}")
     # print(f"Global systematics for lens_spec: {global_syst_spec}")
 
-    auto_lens_spec = sacc_gen.correlate_two_bins(lens_spec_bins, lens_spec_bins)
-    # print(f"Auto-correlated bins for lens_spec: {auto_lens_spec}")
+    # auto_lens_spec = sacc_gen.correlate_two_bins(lens_spec_bins, lens_spec_bins)
+    # print(f"Auto-correlated bins for lens_spec: {auto_lens_spec['lens_lens']}")
 
-    
 
-# angles = """\
+# angles = """\=
 # ## angle_range_xip_1_1 = 7.195005 250.0
 # ## angle_range_xip_1_2 = 7.195005 250.0
 # ## angle_range_xip_1_3 = 5.715196 250.0
