@@ -1,4 +1,0 @@
-# Masters project
-+
-This will form the general space in which notebooks and code are kept and updated.
-I will try to update each notebook as I go and document it well within the markdown structures of the notebook, such that it offers a good arguementation, explanation and documentation on the part of the project it represents.
