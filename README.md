@@ -1,6 +1,6 @@
 # Master thesis project
 
-This repository contains the numerical part to the research. Its main functions is to provide version control and collect all "progress" in one place, aswell as the final product.
+This repository contains the numerical part to the research. Its main functions is to house the final built-up analysis, provide version control and collect all "progress" in one place, aswell as the final product.
 
 The research is part of my master thesis project, for the masters programme Theoretical Physics (TP) at Utrecht Universoty in Utrecht, The Netherlands.
 The first year consisted of following courses, starting in september 2023. With a planning that considered half a year of extra studying, I started my master research project in february 2025. At the start if the thesis project, I had finished all my courses which allowed me to search for a thesis project abroad and leading me to this project. I now perform my research at the Oskar Klein Centre in Stockholm, which will extend to the end of december 2025 or the beginning of january 2026. What happens afterwards is a miracle, first things first.
