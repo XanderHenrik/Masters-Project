@@ -22,7 +22,7 @@ The elements that we need are:
     Passing the essential info to cosmoSIS:
         - The pipeline and the modules required for this pipeline
         - The firecrown likelihood
-        - The Sampler
+        - The sampler
         - The values and priors used for the sampling 
 
 - The values and priors for the sampling.
